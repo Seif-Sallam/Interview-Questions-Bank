@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Question Bank</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <style>
+        .tag-button.activeBTN {
+            background: linear-gradient(135deg, #28a745, #20c997) !important;
+            color: white !important;
+            border: none !important;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4) !important;
+            transform: translateY(-2px) !important;
+        }
+        .question-card-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .question-card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        /* .question-card-tags .tag {
+            background-color: #f8f9fa;
+            color: #495057;
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            border: 1px solid #dee2e6;
+        } */
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="container">
+                <div class="flex items-center justify-between">
+                    <h1>Interview Question Bank</h1>
+                    <div class="flex items-center gap-3">
+                        <button id="refresh-btn" class="btn btn--primary" title="Refresh data">
+                            🔄 Sync
+                        </button>
+                        <nav class="nav-tabs">
+                            <button class="nav-tab active" data-tab="dashboard">Dashboard</button>
+                            <button class="nav-tab" data-tab="questions">Questions</button>
+                            <button class="nav-tab" data-tab="statistics">Statistics</button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="app-main">
+            <div class="container">
+                <!-- Dashboard Tab -->
+                <div id="dashboard-tab" class="tab-content active">
+                    <div class="dashboard-header">
+                        <div>
+                            <h2>Dashboard</h2>
+                            <div id="sync-status" class="sync-status">
+                                <span id="sync-indicator">🟢</span>
+                                <span id="sync-text">Ready</span>
+                            </div>
+                        </div>
+                        <button class="btn btn--primary" id="add-question-btn">
+                            <span>+</span> Add Question
+                        </button>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>Total Questions</h3>
+                            <div class="stat-value" id="total-questions">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>This Week</h3>
+                            <div class="stat-value" id="week-questions">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Easy</h3>
+                            <div class="stat-value easy" id="easy-questions">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Medium</h3>
+                            <div class="stat-value medium" id="medium-questions">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Hard</h3>
+                            <div class="stat-value hard" id="hard-questions">0</div>
+                        </div>
+                    </div>
+
+                    <div class="recent-questions">
+                        <h3>Recent Questions</h3>
+                        <div id="recent-questions-list" class="question-cards">
+                            <!-- Recent questions will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Questions Tab -->
+                <div id="questions-tab" class="tab-content">
+                    <div class="questions-header">
+                        <h2>Question Bank</h2>
+                        <button class="btn btn--primary" id="add-question-btn-2">
+                            <span>+</span> Add Question
+                        </button>
+                    </div>
+
+                    <div class="filters-section">
+                        <div class="filters-row">
+                            <input type="text" id="search-input" class="form-control search-input" placeholder="Search questions...">
+                            <select id="category-filter" class="form-control">
+                                <option value="">All Categories</option>
+                            </select>
+                            <select id="difficulty-filter" class="form-control">
+                                <option value="">All Difficulties</option>
+                            </select>
+                            <select id="platform-filter" class="form-control">
+                                <option value="">All Platforms</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="questions-table-container">
+                        <table class="questions-table">
+                            <thead>
+                                <tr>
+                                    <th data-sort="title">Title <span class="sort-indicator"></span></th>
+                                    <th data-sort="category">Category <span class="sort-indicator"></span></th>
+                                    <th data-sort="difficulty">Difficulty <span class="sort-indicator"></span></th>
+                                    <th data-sort="platform">Platform <span class="sort-indicator"></span></th>
+                                    <th data-sort="dateSolved">Date Solved <span class="sort-indicator"></span></th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="questions-tbody">
+                                <!-- Questions will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Statistics Tab -->
+                <div id="statistics-tab" class="tab-content">
+                    <h2>Statistics</h2>
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h3>Questions by Difficulty</h3>
+                            <div class="chart-container">
+                                <canvas id="difficulty-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Questions by Category</h3>
+                            <div class="chart-container">
+                                <canvas id="category-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Add/Edit Question Modal -->
+        <div id="question-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">Add New Question</h3>
+                    <button class="modal-close" id="close-modal">&times;</button>
+                </div>
+                <form id="question-form" class="modal-body">
+                    <div class="form-group">
+                        <label for="question-title" class="form-label">Title *</label>
+                        <input type="text" id="question-title" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="question-description" class="form-label">Description *</label>
+                        <textarea id="question-description" class="form-control" rows="3" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="question-link" class="form-label">Link *</label>
+                        <input type="text" id="question-link" class="form-control" rows="3" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="question-category" class="form-label">Category *</label>
+                            <select id="question-category" class="form-control" required>
+                                <option value="">Select Category</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="question-difficulty" class="form-label">Difficulty *</label>
+                            <select id="question-difficulty" class="form-control" required>
+                                <option value="">Select Difficulty</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="question-platform" class="form-label">Platform/Source</label>
+                            <input type="text" id="question-platform" class="form-control" placeholder="e.g., LeetCode, Company Interview">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="question-date" class="form-label">Date Solved</label>
+                            <input type="date" id="question-date" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="question-hint" class="form-label">Hint</label>
+                        <textarea id="question-hint" class="form-control" rows="2" placeholder="Optional hint for solving this question"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="question-solution" class="form-label">Solution</label>
+                        <textarea id="question-solution" class="form-control" rows="6" placeholder="Code solution or detailed explanation"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="question-notes" class="form-label">Personal Notes</label>
+                        <textarea id="question-notes" class="form-control" rows="3" placeholder="Your thoughts, complexity analysis, etc."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="question-tags" class="form-label">Tags</label>
+                        <input type="text" id="question-tags" class="form-control" placeholder="comma, separated, tags">
+                        <!-- Buttons showing all the tags and clicking them adds it to the input field-->
+                        <div id="tag-buttons" class="tag-buttons" style="margin-top: 10px;">
+                            <!-- Tag buttons will be dynamically added here -->
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn--secondary" id="cancel-question">Cancel</button>
+                        <button type="submit" class="btn btn--primary">Save Question</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Question Detail Modal -->
+        <div id="detail-modal" class="modal">
+            <div class="modal-content modal-content--large">
+                <div class="modal-header">
+                    <h3 id="detail-title"></h3>
+                    <div class="modal-actions">
+                        <button class="btn btn--secondary btn--sm" id="edit-question">Edit</button>
+                        <button class="btn btn--outline btn--sm" id="delete-question">Delete</button>
+                        <button class="modal-close" id="close-detail">&times;</button>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <div id="detail-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="delete-modal" class="modal">
+            <div class="modal-content modal-content--small">
+                <div class="modal-header">
+                    <h3>Confirm Delete</h3>
+                    <button class="modal-close" id="close-delete">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this question? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn--secondary" id="cancel-delete">Cancel</button>
+                    <button type="button" class="btn btn--primary delete-btn" id="confirm-delete">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
