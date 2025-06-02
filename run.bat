@@ -1,1 +1,1 @@
-npx http-server ./ -p 8195
+npm run start

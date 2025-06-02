@@ -183,17 +183,17 @@
                 <form id="question-form" class="modal-body">
                     <div class="form-group">
                         <label for="question-title" class="form-label">Title *</label>
-                        <input type="text" id="question-title" class="form-control" required>
+                        <input type="text" id="question-title" class="form-control" required autocomplete="off">
                     </div>
 
                     <div class="form-group">
                         <label for="question-description" class="form-label">Description *</label>
-                        <textarea id="question-description" class="form-control" rows="3" required></textarea>
+                        <textarea id="question-description" class="form-control" rows="3" required autocomplete="off"></textarea>
                     </div>
 
                     <div class="form-group">
                         <label for="question-link" class="form-label">Link *</label>
-                        <input type="text" id="question-link" class="form-control" rows="3" required>
+                        <input type="text" id="question-link" class="form-control" rows="3" required autocomplete="off">
                     </div>
 
                     <div class="form-row">
@@ -215,7 +215,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="question-platform" class="form-label">Platform/Source</label>
-                            <input type="text" id="question-platform" class="form-control" placeholder="e.g., LeetCode, Company Interview">
+                            <input type="text" id="question-platform" class="form-control" placeholder="e.g., LeetCode, Company Interview" value="LeetCode">
                         </div>
 
                         <div class="form-group">
@@ -241,7 +241,7 @@
 
                     <div class="form-group">
                         <label for="question-tags" class="form-label">Tags</label>
-                        <input type="text" id="question-tags" class="form-control" placeholder="comma, separated, tags">
+                        <input type="text" id="question-tags" class="form-control" placeholder="comma, separated, tags" autocomplete="off">
                         <!-- Buttons showing all the tags and clicking them adds it to the input field-->
                         <div id="tag-buttons" class="tag-buttons" style="margin-top: 10px;">
                             <!-- Tag buttons will be dynamically added here -->

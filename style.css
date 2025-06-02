@@ -463,6 +463,21 @@ select.form-control {
   font-size: var(--font-size-sm);
 }
 
+.form-checkbox {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  margin-right: var(--space-8);
+}
+
+.form-group-horizontal {
+  display: flex;
+  align-items: center;
+  gap: var(--space-16);
+}
+
 .form-group {
   margin-bottom: var(--space-16);
 }
