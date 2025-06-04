@@ -16,7 +16,7 @@ function createWindow() {
 app.whenReady().then(() => {
   createWindow();
 
-  const icon = nativeImage.createFromPath('image.ico'); // Use your icon
+  const icon = nativeImage.createFromPath('icon.png'); // Use your icon
   tray = new Tray(icon);
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Show App', click: () => win.show() },
