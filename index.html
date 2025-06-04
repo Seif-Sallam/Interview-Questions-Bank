@@ -55,6 +55,7 @@
                             <button class="nav-tab active" data-tab="dashboard">Dashboard</button>
                             <button class="nav-tab" data-tab="questions">Questions</button>
                             <button class="nav-tab" data-tab="statistics">Statistics</button>
+                            <button class="nav-tab" data-tab="archive">Code Archive</button>
                         </nav>
                     </div>
                 </div>
@@ -176,6 +177,43 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Code Archive Tab -->
+                <div id="archive-tab" class="tab-content">
+                    <div class="archive-header">
+                        <h2>Code Archive</h2>
+                        <button class="btn btn--primary" id="add-code-btn">
+                            <span>+</span> Add Code
+                        </button>
+                    </div>
+
+                    <div class="archive-filters">
+                        <div class="filters-row">
+                            <input type="text" id="archive-search" class="form-control search-input" placeholder="Search algorithms...">
+                            <select id="language-filter" class="form-control">
+                                <option value="">All Languages</option>
+                                <option value="cpp">C++</option>
+                                <option value="python">Python</option>
+                            </select>
+                            <select id="category-archive-filter" class="form-control">
+                                <option value="">All Categories</option>
+                                <option value="sorting">Sorting</option>
+                                <option value="searching">Searching</option>
+                                <option value="graph">Graph</option>
+                                <option value="dynamic-programming">Dynamic Programming</option>
+                                <option value="data-structures">Data Structures</option>
+                                <option value="array">Array</option>
+                                <option value="string">String</option>
+                                <option value="tree">Tree</option>
+                                <option value="math">Math</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="code-archive-grid" id="code-archive-grid">
+                        <!-- Code snippets will be populated here -->
+                    </div>
+                </div>
             </div>
         </main>
 
@@ -293,6 +331,102 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn--secondary" id="cancel-delete">Cancel</button>
                     <button type="button" class="btn btn--primary delete-btn" id="confirm-delete">Delete</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add/Edit Code Modal -->
+        <div id="code-modal" class="modal">
+            <div class="modal-content modal-content--large">
+                <div class="modal-header">
+                    <h3 id="code-modal-title">Add Code Snippet</h3>
+                    <button class="modal-close" id="close-code-modal">&times;</button>
+                </div>
+                <form id="code-form" class="modal-body">
+                    <div class="form-group">
+                        <label for="code-title" class="form-label">Algorithm Name *</label>
+                        <input type="text" id="code-title" class="form-control" required autocomplete="off" placeholder="e.g., Binary Search">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="code-language" class="form-label">Language *</label>
+                            <select id="code-language" class="form-control" required>
+                                <option value="">Select Language</option>
+                                <option value="cpp">C++</option>
+                                <option value="python">Python</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="code-category" class="form-label">Category *</label>
+                            <select id="code-category" class="form-control" required>
+                                <option value="">Select Category</option>
+                                <option value="sorting">Sorting</option>
+                                <option value="searching">Searching</option>
+                                <option value="graph">Graph</option>
+                                <option value="dynamic-programming">Dynamic Programming</option>
+                                <option value="data-structures">Data Structures</option>
+                                <option value="array">Array</option>
+                                <option value="string">String</option>
+                                <option value="tree">Tree</option>
+                                <option value="math">Math</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="code-description" class="form-label">Description</label>
+                        <textarea id="code-description" class="form-control" rows="2" placeholder="Brief description of the algorithm"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="code-condensed" class="form-label">Condensed Version *</label>
+                        <textarea id="code-condensed" class="form-control code-textarea" rows="8" required placeholder="Short, compact version of the algorithm"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="code-complexity" class="form-label">Time/Space Complexity</label>
+                        <textarea id="code-complexity" class="form-control" rows="2" placeholder="e.g., Time: O(log n), Space: O(1)"></textarea>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn--secondary" id="cancel-code">Cancel</button>
+                        <button type="submit" class="btn btn--primary">Save Code</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Code Detail Modal -->
+        <div id="code-detail-modal" class="modal">
+            <div class="modal-content modal-content--large">
+                <div class="modal-header">
+                    <h3 id="code-detail-title">Algorithm Details</h3>
+                    <div class="modal-actions">
+                        <button class="btn btn--secondary" id="edit-code">Edit</button>
+                        <button class="btn btn--secondary delete-btn" id="delete-code">Delete</button>
+                        <button class="modal-close" id="close-code-detail">&times;</button>
+                    </div>
+                </div>
+                <div class="modal-body" id="code-detail-content">
+                    <!-- Code details will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Code Confirmation Modal -->
+        <div id="delete-code-modal" class="modal">
+            <div class="modal-content modal-content--small">
+                <div class="modal-header">
+                    <h3>Confirm Delete</h3>
+                    <button class="modal-close" id="close-delete-code">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this code snippet? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn--secondary" id="cancel-delete-code">Cancel</button>
+                    <button type="button" class="btn btn--primary delete-btn" id="confirm-delete-code">Delete</button>
                 </div>
             </div>
         </div>

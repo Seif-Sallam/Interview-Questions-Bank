@@ -2,7 +2,9 @@
 class QuestionBank {
     constructor() {
         this.questions = [];
+        this.codeSnippets = [];
         this.currentEditId = null;
+        this.currentCodeEditId = null;
         this.currentSort = { field: 'dateSolved', direction: 'desc' };
         this.charts = {};
         this.lastSync = new Date();
@@ -11,11 +13,13 @@ class QuestionBank {
 
     async init() {
         await this.loadData();
+        await this.loadCodeSnippets();
         this.setupEventListeners();
         this.populateDropdowns();
         this.updateDashboard();
         this.updateQuestionsTable();
         this.updateStatistics();
+        this.updateCodeArchive();
         this.startAutoSync();
         this.updateSyncStatus('🟢', `Last sync: ${this.formatSyncTime(new Date())}`);
     }
@@ -185,6 +189,26 @@ class QuestionBank {
 
         // Delete confirmation
         document.getElementById('confirm-delete').addEventListener('click', () => this.confirmDelete());
+
+        // Code Archive event listeners
+        document.getElementById('add-code-btn').addEventListener('click', () => this.openCodeModal());
+        document.getElementById('close-code-modal').addEventListener('click', () => this.closeModal('code-modal'));
+        document.getElementById('cancel-code').addEventListener('click', () => this.closeModal('code-modal'));
+        document.getElementById('close-code-detail').addEventListener('click', () => this.closeModal('code-detail-modal'));
+        document.getElementById('close-delete-code').addEventListener('click', () => this.closeModal('delete-code-modal'));
+        document.getElementById('cancel-delete-code').addEventListener('click', () => this.closeModal('delete-code-modal'));
+        document.getElementById('confirm-delete-code').addEventListener('click', () => this.confirmDeleteCode());
+
+        // Code form submission
+        document.getElementById('code-form').addEventListener('submit', (e) => this.handleCodeSubmit(e));
+
+        // Code archive filters
+        document.getElementById('archive-search').addEventListener('input', () => {
+            clearTimeout(this.codeSearchTimeout);
+            this.codeSearchTimeout = setTimeout(() => this.updateCodeArchive(), 300);
+        });
+        document.getElementById('language-filter').addEventListener('change', () => this.updateCodeArchive());
+        document.getElementById('category-archive-filter').addEventListener('change', () => this.updateCodeArchive());
     }
 
     // Tab Management
@@ -198,6 +222,9 @@ class QuestionBank {
         if (tabName === 'statistics') {
             // Delay chart rendering to ensure container is visible
             setTimeout(() => this.updateStatistics(), 100);
+        } else if (tabName === 'archive') {
+            // Update code archive when switching to archive tab
+            setTimeout(() => this.updateCodeArchive(), 100);
         }
     }
 
@@ -295,6 +322,11 @@ class QuestionBank {
         if (modalId === 'question-modal') {
             this.resetForm();
             this.currentEditId = null;
+        } else if (modalId === 'code-modal') {
+            document.getElementById('code-form').reset();
+            this.currentCodeEditId = null;
+        } else if (modalId === 'delete-code-modal') {
+            this.currentCodeEditId = null;
         }
     }
 
@@ -846,6 +878,7 @@ class QuestionBank {
         this.updateQuestionsTable();
         this.populateDropdowns();
         this.updateStatistics();
+        this.updateCodeArchive();
     }
 
     escapeHtml(text) {
@@ -886,6 +919,284 @@ class QuestionBank {
                 refreshBtn.disabled = false;
             }, 2000);
         }
+    }
+
+    // Code Archive Management
+    async loadCodeSnippets() {
+        try {
+            const stored = localStorage.getItem('codeSnippets');
+            this.codeSnippets = stored ? JSON.parse(stored) : this.getDefaultCodeSnippets();
+        } catch (error) {
+            console.error('Error loading code snippets:', error);
+            this.codeSnippets = this.getDefaultCodeSnippets();
+        }
+    }
+
+    async saveCodeSnippets() {
+        try {
+            localStorage.setItem('codeSnippets', JSON.stringify(this.codeSnippets));
+        } catch (error) {
+            console.error('Error saving code snippets:', error);
+        }
+    }
+
+    getDefaultCodeSnippets() {
+        return [
+            {
+                id: 1,
+                title: 'Binary Search',
+                language: 'cpp',
+                category: 'searching',
+                description: 'Search for a target value in a sorted array',
+                condensedCode: `int binarySearch(vector<int>& arr, int target) {
+    int left = 0, right = arr.size() - 1;
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        if (arr[mid] == target) return mid;
+        if (arr[mid] < target) left = mid + 1;
+        else right = mid - 1;
+    }
+    return -1;
+}`,
+                complexity: 'Time: O(log n), Space: O(1)',
+                dateAdded: new Date().toISOString()
+            },
+            {
+                id: 2,
+                title: 'Quick Sort',
+                language: 'python',
+                category: 'sorting',
+                description: 'Efficient divide-and-conquer sorting algorithm',
+                condensedCode: `def quicksort(arr):
+    if len(arr) <= 1: return arr
+    pivot = arr[len(arr) // 2]
+    left = [x for x in arr if x < pivot]
+    middle = [x for x in arr if x == pivot]
+    right = [x for x in arr if x > pivot]
+    return quicksort(left) + middle + quicksort(right)`,
+                complexity: 'Time: O(n log n) average, O(n²) worst case, Space: O(log n)',
+                dateAdded: new Date().toISOString()
+            },
+            {
+                id: 3,
+                title: 'Union Find',
+                language: 'cpp',
+                category: 'data-structures',
+                description: 'Disjoint Set Union data structure with path compression and union by rank',
+                condensedCode: `class UnionFind {
+    vector<int> parent, rank;
+public:
+    UnionFind(int n) : parent(n), rank(n, 0) {
+        iota(parent.begin(), parent.end(), 0);
+    }
+    int find(int x) {
+        return parent[x] == x ? x : parent[x] = find(parent[x]);
+    }
+    bool unite(int x, int y) {
+        x = find(x), y = find(y);
+        if (x == y) return false;
+        if (rank[x] < rank[y]) swap(x, y);
+        parent[y] = x;
+        if (rank[x] == rank[y]) rank[x]++;
+        return true;
+    }
+};`,
+                complexity: 'Time: O(α(n)) per operation where α is inverse Ackermann function, Space: O(n)',
+                dateAdded: new Date().toISOString()
+            }
+        ];
+    }
+
+    updateCodeArchive() {
+        const grid = document.getElementById('code-archive-grid');
+        const searchTerm = document.getElementById('archive-search')?.value.toLowerCase() || '';
+        const languageFilter = document.getElementById('language-filter')?.value || '';
+        const categoryFilter = document.getElementById('category-archive-filter')?.value || '';
+
+        let filteredSnippets = this.codeSnippets.filter(snippet => {
+            const matchesSearch = !searchTerm ||
+                snippet.title.toLowerCase().includes(searchTerm) ||
+                snippet.description.toLowerCase().includes(searchTerm);
+            const matchesLanguage = !languageFilter || snippet.language === languageFilter;
+            const matchesCategory = !categoryFilter || snippet.category === categoryFilter;
+
+            return matchesSearch && matchesLanguage && matchesCategory;
+        });
+
+        if (filteredSnippets.length === 0) {
+            grid.innerHTML = `
+                <div class="code-archive-empty">
+                    <h3>No code snippets found</h3>
+                    <p>Try adjusting your search criteria or add a new code snippet.</p>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = filteredSnippets.map(snippet => `
+            <div class="code-card" onclick="questionBank.showCodeDetail(${snippet.id})">
+                <div class="code-card-header">
+                    <h3 class="code-card-title">${this.escapeHtml(snippet.title)}</h3>
+                    <div class="code-card-meta">
+                        <span class="language-badge">${snippet.language.toUpperCase()}</span>
+                        <span class="category-badge">${snippet.category.replace('-', ' ')}</span>
+                    </div>
+                </div>
+                ${snippet.description ? `
+                    <p class="code-card-description">${this.escapeHtml(snippet.description)}</p>
+                ` : ''}
+                <div class="code-preview">
+                    <code>${this.escapeHtml(snippet.condensedCode.substring(0, 200))}${snippet.condensedCode.length > 200 ? '...' : ''}</code>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    openCodeModal(snippet = null) {
+        this.currentCodeEditId = snippet ? snippet.id : null;
+
+        document.getElementById('code-modal-title').textContent = snippet ? 'Edit Code Snippet' : 'Add Code Snippet';
+
+        // Populate form fields
+        document.getElementById('code-title').value = snippet ? snippet.title : '';
+        document.getElementById('code-language').value = snippet ? snippet.language : '';
+        document.getElementById('code-category').value = snippet ? snippet.category : '';
+        document.getElementById('code-description').value = snippet ? snippet.description : '';
+        document.getElementById('code-condensed').value = snippet ? snippet.condensedCode : '';
+        document.getElementById('code-complexity').value = snippet ? snippet.complexity : '';
+
+        document.getElementById('code-modal').classList.add('show');
+    }
+
+    async handleCodeSubmit(e) {
+        e.preventDefault();
+
+        const formData = {
+            title: document.getElementById('code-title').value.trim(),
+            language: document.getElementById('code-language').value,
+            category: document.getElementById('code-category').value,
+            description: document.getElementById('code-description').value.trim(),
+            condensedCode: document.getElementById('code-condensed').value.trim(),
+            complexity: document.getElementById('code-complexity').value.trim()
+        };
+
+        if (!formData.title || !formData.language || !formData.category || !formData.condensedCode) {
+            alert('Please fill in all required fields.');
+            return;
+        }
+
+        if (this.currentCodeEditId) {
+            // Edit existing snippet
+            const index = this.codeSnippets.findIndex(s => s.id === this.currentCodeEditId);
+            if (index !== -1) {
+                this.codeSnippets[index] = {
+                    ...this.codeSnippets[index],
+                    ...formData,
+                    dateModified: new Date().toISOString()
+                };
+            }
+        } else {
+            // Add new snippet
+            const newSnippet = {
+                id: Date.now(),
+                ...formData,
+                dateAdded: new Date().toISOString()
+            };
+            this.codeSnippets.push(newSnippet);
+        }
+
+        await this.saveCodeSnippets();
+        this.updateCodeArchive();
+        this.closeModal('code-modal');
+        this.showNotification(`Code snippet ${this.currentCodeEditId ? 'updated' : 'added'} successfully!`);
+    }
+
+    showCodeDetail(id) {
+        const snippet = this.codeSnippets.find(s => s.id === id);
+        if (!snippet) return;
+
+        document.getElementById('code-detail-title').textContent = snippet.title;
+
+        const content = document.getElementById('code-detail-content');
+        content.innerHTML = `
+            <div class="code-detail-meta">
+                <div class="code-detail-meta-item">
+                    <span class="code-detail-meta-label">Language</span>
+                    <span class="code-detail-meta-value language-badge">${snippet.language.toUpperCase()}</span>
+                </div>
+                <div class="code-detail-meta-item">
+                    <span class="code-detail-meta-label">Category</span>
+                    <span class="code-detail-meta-value category-badge">${snippet.category.replace('-', ' ')}</span>
+                </div>
+                <div class="code-detail-meta-item">
+                    <span class="code-detail-meta-label">Added</span>
+                    <span class="code-detail-meta-value">${this.formatDate(snippet.dateAdded)}</span>
+                </div>
+            </div>
+
+            ${snippet.description ? `
+                <div class="code-detail-section">
+                    <h4>Description</h4>
+                    <p>${this.escapeHtml(snippet.description)}</p>
+                </div>
+            ` : ''}
+
+            ${snippet.complexity ? `
+                <div class="code-detail-section">
+                    <h4>Complexity</h4>
+                    <p>${this.escapeHtml(snippet.complexity)}</p>
+                </div>
+            ` : ''}
+
+            <div class="code-detail-section">
+                <h4>Code</h4>
+                <div class="code-block" id="code-display-${id}">
+                    <code>${this.escapeHtml(snippet.condensedCode)}</code>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('edit-code').onclick = () => {
+            this.closeModal('code-detail-modal');
+            this.openCodeModal(snippet);
+        };
+
+        document.getElementById('delete-code').onclick = () => {
+            this.closeModal('code-detail-modal');
+            this.showDeleteCodeModal(id);
+        };
+
+        document.getElementById('code-detail-modal').classList.add('show');
+    }
+
+    toggleCodeVersion(version, id) {
+        const snippet = this.codeSnippets.find(s => s.id === id);
+        if (!snippet) return;
+
+        // Update toggle buttons
+        document.querySelectorAll('.version-toggle').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+
+        // Update code display
+        const codeDisplay = document.getElementById(`code-display-${id}`);
+        const code = snippet.condensedCode;
+        codeDisplay.innerHTML = `<code>${this.escapeHtml(code)}</code>`;
+    }
+
+    showDeleteCodeModal(id) {
+        this.currentCodeEditId = id;
+        document.getElementById('delete-code-modal').classList.add('show');
+    }
+
+    confirmDeleteCode() {
+        if (!this.currentCodeEditId) return;
+
+        this.codeSnippets = this.codeSnippets.filter(s => s.id !== this.currentCodeEditId);
+        this.saveCodeSnippets();
+        this.updateCodeArchive();
+        this.closeModal('delete-code-modal');
+        this.showNotification('Code snippet deleted successfully!');
+        this.currentCodeEditId = null;
     }
 }
 
