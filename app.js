@@ -924,87 +924,84 @@ class QuestionBank {
     // Code Archive Management
     async loadCodeSnippets() {
         try {
-            const stored = localStorage.getItem('codeSnippets');
-            this.codeSnippets = stored ? JSON.parse(stored) : this.getDefaultCodeSnippets();
+            const response = await fetch('/api/code-snippets');
+            if (response.ok) {
+                this.codeSnippets = await response.json();
+            } else {
+                console.error('Failed to load code snippets from server');
+                this.codeSnippets = [];
+            }
         } catch (error) {
             console.error('Error loading code snippets:', error);
-            this.codeSnippets = this.getDefaultCodeSnippets();
+            this.codeSnippets = [];
         }
     }
 
-    async saveCodeSnippets() {
+    async saveCodeSnippet(snippetData) {
         try {
-            localStorage.setItem('codeSnippets', JSON.stringify(this.codeSnippets));
+            const response = await fetch('/api/code-snippets', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(snippetData)
+            });
+
+            if (response.ok) {
+                const newSnippet = await response.json();
+                this.codeSnippets.push(newSnippet);
+                return newSnippet;
+            } else {
+                throw new Error('Failed to save code snippet');
+            }
         } catch (error) {
-            console.error('Error saving code snippets:', error);
+            console.error('Error saving code snippet:', error);
+            throw error;
         }
     }
 
-    getDefaultCodeSnippets() {
-        return [
-            {
-                id: 1,
-                title: 'Binary Search',
-                language: 'cpp',
-                category: 'searching',
-                description: 'Search for a target value in a sorted array',
-                condensedCode: `int binarySearch(vector<int>& arr, int target) {
-    int left = 0, right = arr.size() - 1;
-    while (left <= right) {
-        int mid = left + (right - left) / 2;
-        if (arr[mid] == target) return mid;
-        if (arr[mid] < target) left = mid + 1;
-        else right = mid - 1;
-    }
-    return -1;
-}`,
-                complexity: 'Time: O(log n), Space: O(1)',
-                dateAdded: new Date().toISOString()
-            },
-            {
-                id: 2,
-                title: 'Quick Sort',
-                language: 'python',
-                category: 'sorting',
-                description: 'Efficient divide-and-conquer sorting algorithm',
-                condensedCode: `def quicksort(arr):
-    if len(arr) <= 1: return arr
-    pivot = arr[len(arr) // 2]
-    left = [x for x in arr if x < pivot]
-    middle = [x for x in arr if x == pivot]
-    right = [x for x in arr if x > pivot]
-    return quicksort(left) + middle + quicksort(right)`,
-                complexity: 'Time: O(n log n) average, O(n²) worst case, Space: O(log n)',
-                dateAdded: new Date().toISOString()
-            },
-            {
-                id: 3,
-                title: 'Union Find',
-                language: 'cpp',
-                category: 'data-structures',
-                description: 'Disjoint Set Union data structure with path compression and union by rank',
-                condensedCode: `class UnionFind {
-    vector<int> parent, rank;
-public:
-    UnionFind(int n) : parent(n), rank(n, 0) {
-        iota(parent.begin(), parent.end(), 0);
-    }
-    int find(int x) {
-        return parent[x] == x ? x : parent[x] = find(parent[x]);
-    }
-    bool unite(int x, int y) {
-        x = find(x), y = find(y);
-        if (x == y) return false;
-        if (rank[x] < rank[y]) swap(x, y);
-        parent[y] = x;
-        if (rank[x] == rank[y]) rank[x]++;
-        return true;
-    }
-};`,
-                complexity: 'Time: O(α(n)) per operation where α is inverse Ackermann function, Space: O(n)',
-                dateAdded: new Date().toISOString()
+    async updateCodeSnippet(id, snippetData) {
+        try {
+            const response = await fetch(`/api/code-snippets/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(snippetData)
+            });
+
+            if (response.ok) {
+                const updatedSnippet = await response.json();
+                const index = this.codeSnippets.findIndex(s => s.id === id);
+                if (index !== -1) {
+                    this.codeSnippets[index] = updatedSnippet;
+                }
+                return updatedSnippet;
+            } else {
+                throw new Error('Failed to update code snippet');
             }
-        ];
+        } catch (error) {
+            console.error('Error updating code snippet:', error);
+            throw error;
+        }
+    }
+
+    async deleteCodeSnippet(id) {
+        try {
+            const response = await fetch(`/api/code-snippets/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                this.codeSnippets = this.codeSnippets.filter(s => s.id !== id);
+                return true;
+            } else {
+                throw new Error('Failed to delete code snippet');
+            }
+        } catch (error) {
+            console.error('Error deleting code snippet:', error);
+            throw error;
+        }
     }
 
     updateCodeArchive() {
@@ -1085,30 +1082,24 @@ public:
             return;
         }
 
-        if (this.currentCodeEditId) {
-            // Edit existing snippet
-            const index = this.codeSnippets.findIndex(s => s.id === this.currentCodeEditId);
-            if (index !== -1) {
-                this.codeSnippets[index] = {
-                    ...this.codeSnippets[index],
-                    ...formData,
-                    dateModified: new Date().toISOString()
-                };
+        try {
+            if (this.currentCodeEditId) {
+                // Edit existing snippet
+                await this.updateCodeSnippet(this.currentCodeEditId, formData);
+                this.showNotification('Code snippet updated successfully!');
+            } else {
+                // Add new snippet
+                await this.saveCodeSnippet(formData);
+                this.showNotification('Code snippet added successfully!');
             }
-        } else {
-            // Add new snippet
-            const newSnippet = {
-                id: Date.now(),
-                ...formData,
-                dateAdded: new Date().toISOString()
-            };
-            this.codeSnippets.push(newSnippet);
-        }
 
-        await this.saveCodeSnippets();
-        this.updateCodeArchive();
-        this.closeModal('code-modal');
-        this.showNotification(`Code snippet ${this.currentCodeEditId ? 'updated' : 'added'} successfully!`);
+            this.updateCodeArchive();
+            this.closeModal('code-modal');
+            this.currentCodeEditId = null;
+        } catch (error) {
+            alert('Error saving code snippet. Please try again.');
+            console.error('Error in handleCodeSubmit:', error);
+        }
     }
 
     showCodeDetail(id) {
@@ -1130,7 +1121,7 @@ public:
                 </div>
                 <div class="code-detail-meta-item">
                     <span class="code-detail-meta-label">Added</span>
-                    <span class="code-detail-meta-value">${this.formatDate(snippet.dateAdded)}</span>
+                    <span class="code-detail-meta-value">${this.formatDate(snippet.createdAt)}</span>
                 </div>
             </div>
 
@@ -1188,15 +1179,19 @@ public:
         document.getElementById('delete-code-modal').classList.add('show');
     }
 
-    confirmDeleteCode() {
+    async confirmDeleteCode() {
         if (!this.currentCodeEditId) return;
 
-        this.codeSnippets = this.codeSnippets.filter(s => s.id !== this.currentCodeEditId);
-        this.saveCodeSnippets();
-        this.updateCodeArchive();
-        this.closeModal('delete-code-modal');
-        this.showNotification('Code snippet deleted successfully!');
-        this.currentCodeEditId = null;
+        try {
+            await this.deleteCodeSnippet(this.currentCodeEditId);
+            this.updateCodeArchive();
+            this.closeModal('delete-code-modal');
+            this.showNotification('Code snippet deleted successfully!');
+            this.currentCodeEditId = null;
+        } catch (error) {
+            alert('Error deleting code snippet. Please try again.');
+            console.error('Error in confirmDeleteCode:', error);
+        }
     }
 }
 

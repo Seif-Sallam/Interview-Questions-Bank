@@ -31,6 +31,19 @@ db.serialize(() => {
         updatedAt TEXT NOT NULL
     )`);
 
+    // Create code snippets table
+    db.run(`CREATE TABLE IF NOT EXISTS code_snippets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        language TEXT NOT NULL,
+        category TEXT NOT NULL,
+        description TEXT,
+        condensedCode TEXT NOT NULL,
+        complexity TEXT,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
+    )`);
+
     // Insert sample data if table is empty
     db.get("SELECT COUNT(*) as count FROM questions", (err, row) => {
         if (err) {
@@ -99,10 +112,157 @@ db.serialize(() => {
                     question.difficulty, question.platform, question.dateSolved, question.hint,
                     question.solution, question.notes, question.tags, question.createdAt, question.updatedAt
                 );
+            });            stmt.finalize();
+            console.log('Sample data inserted successfully');
+        }
+    });
+
+    // Insert sample code snippets if table is empty
+    db.get("SELECT COUNT(*) as count FROM code_snippets", (err, row) => {
+        if (err) {
+            console.error('Error checking code_snippets table:', err);
+            return;
+        }
+
+        if (row.count === 0) {
+            console.log('Inserting sample code snippets...');
+            const sampleCodeSnippets = [
+                {
+                    title: "Binary Search",
+                    language: "cpp",
+                    category: "searching",
+                    description: "Search for a target value in a sorted array using binary search algorithm",
+                    condensedCode: `int binarySearch(vector<int>& arr, int target) {
+    int left = 0, right = arr.size() - 1;
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        if (arr[mid] == target) return mid;
+        if (arr[mid] < target) left = mid + 1;
+        else right = mid - 1;
+    }
+    return -1;
+}`,
+
+                    complexity: "Time: O(log n), Space: O(1)",
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                },
+                {
+                    title: "Quick Sort",
+                    language: "cpp",
+                    category: "sorting",
+                    description: "Efficient divide-and-conquer sorting algorithm",
+                    condensedCode: `void quickSort(vector<int>& arr, int low, int high) {
+    if (low < high) {
+        int pi = partition(arr, low, high);
+        quickSort(arr, low, pi - 1);
+        quickSort(arr, pi + 1, high);
+    }
+}
+
+int partition(vector<int>& arr, int low, int high) {
+    int pivot = arr[high];
+    int i = low - 1;
+    for (int j = low; j < high; j++) {
+        if (arr[j] < pivot) {
+            i++;
+            swap(arr[i], arr[j]);
+        }
+    }
+    swap(arr[i + 1], arr[high]);
+    return i + 1;
+}`,
+
+                    complexity: "Time: O(n log n) average, O(n²) worst case, Space: O(log n)",
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                },
+                {
+                    title: "Binary Search",
+                    language: "python",
+                    category: "searching",
+                    description: "Python implementation of binary search algorithm",
+                    condensedCode: `def binary_search(arr, target):
+    left, right = 0, len(arr) - 1
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return -1`,
+
+                    complexity: "Time: O(log n), Space: O(1)",
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                },
+                {
+                    title: "Union Find",
+                    language: "cpp",
+                    category: "data-structures",
+                    description: "Disjoint Set Union data structure with path compression and union by rank",
+                    condensedCode: `class UnionFind {
+    vector<int> parent, rank;
+public:
+    UnionFind(int n) : parent(n), rank(n, 0) {
+        for (int i = 0; i < n; i++) parent[i] = i;
+    }
+
+    int find(int x) {
+        if (parent[x] != x) parent[x] = find(parent[x]);
+        return parent[x];
+    }
+
+    void unite(int x, int y) {
+        int px = find(x), py = find(y);
+        if (px == py) return;
+        if (rank[px] < rank[py]) swap(px, py);
+        parent[py] = px;
+        if (rank[px] == rank[py]) rank[px]++;
+    }
+
+    bool connected(int x, int y) {
+        return find(x) == find(y);
+    }
+};`,
+
+                    complexity: "Time: O(α(n)) per operation, Space: O(n)",
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                },
+                {
+                    title: "Find First Negative",
+                    language: "python",
+                    category: "array",
+                    description: "Find the first negative number in an array",
+                    condensedCode: `def find_first_negative(arr):
+    for i, num in enumerate(arr):
+        if num < 0:
+            return i
+    return -1`,
+
+                    complexity: "Time: O(n), Space: O(1)",
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }
+            ];
+
+            const stmt = db.prepare(`INSERT INTO code_snippets
+                (title, language, category, description, condensedCode, complexity, createdAt, updatedAt)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+
+            sampleCodeSnippets.forEach(snippet => {
+                stmt.run(
+                    snippet.title, snippet.language, snippet.category, snippet.description,
+                    snippet.condensedCode, snippet.complexity,
+                    snippet.createdAt, snippet.updatedAt
+                );
             });
 
             stmt.finalize();
-            console.log('Sample data inserted successfully');
+            console.log('Sample code snippets inserted successfully');
         }
     });
 });
@@ -270,6 +430,142 @@ app.delete('/api/questions/:id', (req, res) => {
         }
 
         res.json({ message: 'Question deleted successfully' });
+    });
+});
+
+// Code Snippets API Routes
+
+// Get all code snippets
+app.get('/api/code-snippets', (req, res) => {
+    db.all("SELECT * FROM code_snippets ORDER BY id DESC", (err, rows) => {
+        if (err) {
+            console.error('Error fetching code snippets:', err);
+            res.status(500).json({ error: 'Internal server error' });
+            return;
+        }
+
+        res.json(rows);
+    });
+});
+
+// Get a single code snippet by ID
+app.get('/api/code-snippets/:id', (req, res) => {
+    const id = req.params.id;
+    db.get("SELECT * FROM code_snippets WHERE id = ?", [id], (err, row) => {
+        if (err) {
+            console.error('Error fetching code snippet:', err);
+            res.status(500).json({ error: 'Internal server error' });
+            return;
+        }
+
+        if (!row) {
+            res.status(404).json({ error: 'Code snippet not found' });
+            return;
+        }
+
+        res.json(row);
+    });
+});
+
+// Create a new code snippet
+app.post('/api/code-snippets', (req, res) => {
+    const {
+        title, language, category, description, condensedCode, complexity
+    } = req.body;
+
+    if (!title || !language || !category || !condensedCode) {
+        res.status(400).json({ error: 'Title, language, category, and condensed code are required' });
+        return;
+    }
+
+    const createdAt = new Date().toISOString();
+    const updatedAt = createdAt;
+
+    db.run(`INSERT INTO code_snippets
+        (title, language, category, description, condensedCode, complexity, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [title, language, category, description, condensedCode, complexity, createdAt, updatedAt],
+    function(err) {
+        if (err) {
+            console.error('Error creating code snippet:', err);
+            res.status(500).json({ error: 'Internal server error' });
+            return;
+        }
+
+        // Return the created code snippet
+        db.get("SELECT * FROM code_snippets WHERE id = ?", [this.lastID], (err, row) => {
+            if (err) {
+                console.error('Error fetching created code snippet:', err);
+                res.status(500).json({ error: 'Internal server error' });
+                return;
+            }
+
+            res.status(201).json(row);
+        });
+    });
+});
+
+// Update a code snippet
+app.put('/api/code-snippets/:id', (req, res) => {
+    const id = req.params.id;
+    const {
+        title, language, category, description, condensedCode, complexity
+    } = req.body;
+
+    if (!title || !language || !category || !condensedCode) {
+        res.status(400).json({ error: 'Title, language, category, and condensed code are required' });
+        return;
+    }
+
+    const updatedAt = new Date().toISOString();
+
+    db.run(`UPDATE code_snippets SET
+        title = ?, language = ?, category = ?, description = ?,
+        condensedCode = ?, complexity = ?, updatedAt = ?
+        WHERE id = ?`,
+    [title, language, category, description, condensedCode, complexity, updatedAt, id],
+    function(err) {
+        if (err) {
+            console.error('Error updating code snippet:', err);
+            res.status(500).json({ error: 'Internal server error' });
+            return;
+        }
+
+        if (this.changes === 0) {
+            res.status(404).json({ error: 'Code snippet not found' });
+            return;
+        }
+
+        // Return the updated code snippet
+        db.get("SELECT * FROM code_snippets WHERE id = ?", [id], (err, row) => {
+            if (err) {
+                console.error('Error fetching updated code snippet:', err);
+                res.status(500).json({ error: 'Internal server error' });
+                return;
+            }
+
+            res.json(row);
+        });
+    });
+});
+
+// Delete a code snippet
+app.delete('/api/code-snippets/:id', (req, res) => {
+    const id = req.params.id;
+
+    db.run("DELETE FROM code_snippets WHERE id = ?", [id], function(err) {
+        if (err) {
+            console.error('Error deleting code snippet:', err);
+            res.status(500).json({ error: 'Internal server error' });
+            return;
+        }
+
+        if (this.changes === 0) {
+            res.status(404).json({ error: 'Code snippet not found' });
+            return;
+        }
+
+        res.json({ message: 'Code snippet deleted successfully' });
     });
 });
 
