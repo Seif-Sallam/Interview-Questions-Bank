@@ -209,7 +209,8 @@ class QuestionBank {
             "Linked List", "Tree", "Graph", "Dynamic Programming", "Greedy", "Sorting", "Searching",
             "String", "Bit Manipulation", "Math", "Recursion", "Backtracking", "Concurrency", "Object-Oriented Programming",
             "Two Pointers", "Sliding Window", "Hash Table", "Stack", "Queue", "Heap/Priority Queue",
-            "Database", "SQL", "NoSQL", "API Design"
+            "Database", "SQL", "NoSQL", "API Design",
+            "Prefix-sum", "Disjoint-Set"
         ];
 
         // Form dropdowns
@@ -687,6 +688,7 @@ class QuestionBank {
     updateStatistics() {
         this.updateDifficultyChart();
         this.updateCategoryChart();
+        this.updateTagsChart();
     }
 
     updateDifficultyChart() {
@@ -767,6 +769,75 @@ class QuestionBank {
                 }
             }
         });
+    }
+
+    updateTagsChart() {
+        const ctx = document.getElementById('tags-chart');
+        if (!ctx) return;
+
+        // Collect all tags from all questions
+        const tagCount = {};
+        this.questions.forEach(q => {
+            if (q.tags && Array.isArray(q.tags)) {
+                q.tags.forEach(tag => {
+                    tagCount[tag] = (tagCount[tag] || 0) + 1;
+                });
+            }
+        });
+
+        // Sort tags by count and take top 10
+        const sortedTags = Object.entries(tagCount)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10);
+
+        const labels = sortedTags.map(([tag]) => tag);
+        const data = sortedTags.map(([, count]) => count);
+
+        if (this.charts.tags) {
+            this.charts.tags.destroy();
+        }
+
+        // Use horizontal bar chart if we have many tags, otherwise use doughnut
+        const chartType = labels.length > 6 ? 'bar' : 'doughnut';
+
+        const chartConfig = {
+            type: chartType,
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: chartType === 'bar' ? 'Questions' : '',
+                    data: data,
+                    backgroundColor: chartType === 'bar' ? '#1FB8CD' : [
+                        '#1FB8CD', '#FFC185', '#B4413C', '#4BC0C0', '#FF6384', '#36A2EB',
+                        '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: chartType === 'doughnut',
+                        position: 'bottom'
+                    }
+                }
+            }
+        };
+
+        if (chartType === 'bar') {
+            chartConfig.options.indexAxis = 'y'; // Horizontal bars
+            chartConfig.options.scales = {
+                x: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            };
+        }
+
+        this.charts.tags = new Chart(ctx, chartConfig);
     }
 
     // Utility Methods
