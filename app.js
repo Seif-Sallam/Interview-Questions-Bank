@@ -233,7 +233,7 @@ class QuestionBank {
         const categories = ["Algorithm","Data Structure", "System Design", "Behavioral", "Database", "Backend", "Design Patterns"];
         const difficulties = ["Easy", "Medium", "Hard"];
         const tags = [
-            "Linked List", "Tree", "Graph", "Dynamic Programming", "Greedy", "Sorting", "Searching",
+            "Linked List", "Array", "Tree", "Graph", "Dynamic Programming", "Greedy", "Sorting", "Searching",
             "String", "Bit Manipulation", "Math", "Recursion", "Backtracking", "Concurrency", "Object-Oriented Programming",
             "Two Pointers", "Sliding Window", "Hash Table", "Stack", "Queue", "Heap/Priority Queue",
             "Database", "SQL", "NoSQL", "API Design",
@@ -1042,11 +1042,22 @@ class QuestionBank {
                 ${snippet.description ? `
                     <p class="code-card-description">${this.escapeHtml(snippet.description)}</p>
                 ` : ''}
-                <div class="code-preview">
-                    <code>${this.escapeHtml(snippet.condensedCode.substring(0, 200))}${snippet.condensedCode.length > 200 ? '...' : ''}</code>
-                </div>
+                <pre class="code-preview"><code>${this.escapeHtml(this.getCodePreview(snippet.condensedCode))}</code> </pre>
             </div>
         `).join('');
+    }
+
+    getCodePreview(code) {
+        // Split code into lines and take only first 5 lines
+        const lines = code.split('\n');
+        const previewLines = lines.slice(0, 5);
+        
+        // If there are more than 5 lines, add indication
+        if (lines.length > 5) {
+            return previewLines.join('\n') + '\n ...';
+        }
+        
+        return previewLines.join('\n');
     }
 
     openCodeModal(snippet = null) {
@@ -1140,10 +1151,8 @@ class QuestionBank {
             ` : ''}
 
             <div class="code-detail-section">
-                <h4>Code</h4>
-                <div class="code-block" id="code-display-${id}">
-                    <code>${this.escapeHtml(snippet.condensedCode)}</code>
-                </div>
+            <h4>Code</h4>
+                <pre class="code-block" id="code-display-${id}"><code>${this.escapeHtml(snippet.condensedCode)}</code></pre>
             </div>
         `;
 
